@@ -19,13 +19,12 @@ exports.hashAndSub = function(grunt, options) { //files, out, encoding, fileName
       nameToHashedName = {},
       formatter        = null;
 
-  grunt.log.ok('out: ' + out);
   encoding = (encoding || 'utf8');
-  grunt.log.debug('Using encoding ' + encoding);
+  grunt.verbose.write('Using encoding ' + encoding);
   fileNameFormat = (fileNameFormat || '${hash}.${name}.cache.${ext}');
-  grunt.log.debug('Using fileNameFormat ' + fileNameFormat);
-  renameFiles = renameFiles === undefined? true : false;
-  grunt.log.debug(renameFiles? 'Renaming files' : 'Not renaming files');
+  grunt.verbose.write('Using fileNameFormat ' + fileNameFormat);
+  renameFiles = (renameFiles === undefined && renameFiles !== false)? true : false;
+  grunt.verbose.write(renameFiles? 'Renaming files' : 'Not renaming files');
 
   formatter = utils.compileFormat(fileNameFormat);
 
@@ -50,17 +49,26 @@ exports.hashAndSub = function(grunt, options) { //files, out, encoding, fileName
     if(renameFiles) {
       fs.renameSync(f, path.resolve(path.dirname(f), renamed));
     }
-    grunt.log.write(f + ' ').ok(renamed);
+    grunt.verbose.write(f + ' ').ok(renamed);
   });
 
   // Substituting references to the given files with the hashed ones.
   grunt.file.expand(out).forEach(function(f) {
     var outContents = fs.readFileSync(f, encoding);
     for (var name in nameToHashedName) {
-      grunt.log.debug('Substituting ' + name + ' by ' + nameToHashedName[name]);
-      outContents = outContents.replace(name, nameToHashedName[name]);
+      grunt.verbose.write('Substituting ' + name + ' by ' + nameToHashedName[name]);
+
+      var ext = name.slice(name.lastIndexOf('.')+ 1, name.length)
+
+      var re_str = 'all.min.[0-9a-f]+\\.'+ ext
+
+      grunt.verbose.write(re_str)
+
+      var re = new RegExp(re_str)
+
+      outContents = outContents.replace(re, nameToHashedName[name]);
     }
-    grunt.log.debug('Saving the updated contents of the outination file');
+    grunt.verbose.write('Saving the updated contents of the outination file');
     fs.writeFileSync(f, outContents, encoding);
   });
 };
